@@ -1,5 +1,6 @@
 # Used to interact with Discord api
 import discord
+from discord.ext import commands
 from discord_token import DISCORD_TOKEN
 
 # AN INTENT ALLOWS THE BOT TO LISTEN TO
@@ -11,23 +12,38 @@ intents = discord.Intents.default()
 # allowing it to read message contents
 intents.message_content = True
 
-# Creating a client with the specified intents
-client = discord.Client(intents=intents)
+# A 'commands.Bot' IS A SUBCLASS OF 'discord.client'
+# WHICH ALLOWS YOU TO MANAGE COMMANDS AND IT INHERITS
+# ALL OF ITS FUNCTIONALITIES
 
-@client.event
+# Creating a bot with the specified intents
+bot = commands.Bot(command_prefix='/', intents=intents)
+
+# prints message to terminal to show it's running
+@bot.event
 async def on_ready():
     # may need to handle connection to weather api
     print('logged in successfully')
 
 
-@client.event
+# processing every message
+@bot.event
 async def on_message(message):
     # ignore messages received by the bot
-    if message.author == client.user:
+    if message.author == bot.user:
         return
 
-    if message.content.startswith('1'):
+    if message.content.startswith('hi'):
         await message.channel.send('Hello!')
 
-# Giving the client access to the token
-client.run(DISCORD_TOKEN)
+    # check to see if a command was called
+    await bot.process_commands(message)
+
+
+@bot.command()
+# displays the current weather in Southampton
+async def weatherNow(context):
+    await context.send('Currently being worked on!')
+
+# Giving the bot access to the token
+bot.run(DISCORD_TOKEN)

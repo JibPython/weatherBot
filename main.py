@@ -50,13 +50,9 @@ async def on_message(message):
 # displays the current weather in Southampton
 async def weatherNow(context):
 
-    # Southampton Longitude cords
-    soLon = -1.4043
+    city = 'southampton'
 
-    # Southampton Latitude cords
-    soLat = 50.904
-
-    weatherCall = f'https://api.openweathermap.org/data/2.5/weather?lat={soLat}&lon={soLon}&appid={WEATHER_API}'
+    weatherCall = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}'
 
     # making an HTTP call to 'OpenWeatherMap'
     async with aiohttp.ClientSession() as session:
@@ -95,6 +91,17 @@ async def weatherNow(context):
                 output += f' {key} : {weather_details[key]} \n'
 
             await context.send(output)
+
+
+@bot.command()
+# displays the current weather of any city around the world
+async def weatherNowAt(context, city):
+    weatherResponse = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}'
+
+
+def formatResponse(weatherCall):
+    pass
+
 
 # Giving the bot access to the token
 bot.run(DISCORD_TOKEN)

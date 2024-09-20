@@ -54,6 +54,20 @@ async def weatherNow(context):
 
     weatherCall = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}'
 
+    # calling the function to format the JSON response
+    await formatResponse(context, weatherCall)
+
+
+@bot.command()
+# displays the current weather of any city around the world
+async def weatherNowAt(context, city):
+    weatherCall = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}'
+
+    # calling the function to format the JSON response
+    await formatResponse(context, weatherCall)
+
+
+async def formatResponse(context, weatherCall):
     # making an HTTP call to 'OpenWeatherMap'
     async with aiohttp.ClientSession() as session:
         async with session.get(weatherCall) as resp:
@@ -90,17 +104,8 @@ async def weatherNow(context):
                     output += ':thermometer:'
                 output += f' {key} : {weather_details[key]} \n'
 
+            # sends the output to discord chat
             await context.send(output)
-
-
-@bot.command()
-# displays the current weather of any city around the world
-async def weatherNowAt(context, city):
-    weatherResponse = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}'
-
-
-def formatResponse(weatherCall):
-    pass
 
 
 # Giving the bot access to the token

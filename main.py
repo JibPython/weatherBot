@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 # retrieve token and api
-from discord_token import DISCORD_TOKEN, WEATHER_API
+from bot_information import DISCORD_TOKEN, WEATHER_API
 # an asynchronous http library to retrieve weather information
 # from 'OpenWeatherMap'
 import aiohttp
@@ -60,11 +60,17 @@ async def weatherNow(context):
 
 @bot.command()
 # displays the current weather of any city around the world
-async def weatherNowAt(context, city):
-    weatherCall = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}'
+async def weatherNowAt(context, city: str = None):
 
-    # calling the function to format the JSON response
-    await formatResponse(context, weatherCall)
+    # 'city' will have a default type of None, so we can send a message back to the user to tell
+    # them to enter a city name which will make the type a String
+    if city is None:
+        await context.send(':x: Did not enter a city name!')
+    else:
+        weatherCall = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}'
+
+        # calling the function to format the JSON response
+        await formatResponse(context, weatherCall)
 
 
 async def formatResponse(context, weatherCall):
@@ -76,36 +82,44 @@ async def formatResponse(context, weatherCall):
             data = json.loads(data)
 
             # Creating dictionary from json
-            weather_details = {
-                'city': data["name"],
-                'country': data["sys"]["country"],
-                'description': data["weather"][0]["description"],
-                'temperature': data["main"]["temp"],
-                'wind speed': data["wind"]["speed"]
-            }
+            try:
+                weatherDetails = {
+                    'city': data["name"],
+                    'country': data["sys"]["country"],
+                    'description': data["weather"][0]["description"],
+                    'temperature': data["main"]["temp"],
+                    'wind speed': data["wind"]["speed"]
+                }
 
-            # Convert and format the temperature from Kelvin to Celsius
-            weather_details['temperature'] = str(round(weather_details['temperature'] - 273.15, 2)) + '°C'
+                # Convert and format the temperature from Kelvin to Celsius
+                weatherDetails['temperature'] = str(round(weatherDetails['temperature'] - 273.15, 2)) + '°C'
 
-            weather_details['wind speed'] = str(weather_details['wind speed']) + 'm/s'
+                weatherDetails['wind speed'] = str(weatherDetails['wind speed']) + 'm/s'
 
-            # formatting an output message to discord
-            output = ''
-            for key in weather_details:
-                if key == 'city':
-                    output += ':cityscape:'
-                elif key == 'country':
-                    output += ':map:'
-                elif key == 'description':
-                    output += ':bookmark_tabs:'
-                elif key == 'wind speed':
-                    output += ':leaves:'
-                else:
-                    output += ':thermometer:'
-                output += f' {key} : {weather_details[key]} \n'
+                # formatting an output message to discord
+                output = ''
+                for key in weatherDetails:
+                    if key == 'city':
+                        output += ':cityscape:'
+                    elif key == 'country':
+                        output += ':map:'
+                    elif key == 'description':
+                        output += ':bookmark_tabs:'
+                    elif key == 'wind speed':
+                        output += ':leaves:'
+                    else:
+                        output += ':thermometer:'
+                    output += f' {key} : {weatherDetails[key]} \n'
 
-            # sends the output to discord chat
-            await context.send(output)
+                # sends the output to discord chat
+                await context.send(output)
+
+            # missing keys in dictionary from incorrect city name or website is unable to send a
+            # successful response
+            except KeyError:
+                await context.send(":x: Unable to find city weather details!")
+
+
 
 
 # Giving the bot access to the token

@@ -25,6 +25,7 @@ intents.message_content = True
 # Creating a bot with the specified intents
 bot = commands.Bot(command_prefix='/', intents=intents)
 
+
 # prints message to terminal to show it's running
 @bot.event
 async def on_ready():
@@ -49,7 +50,6 @@ async def on_message(message):
 @bot.command()
 # displays the current weather in Southampton
 async def weatherNow(context):
-
     city = 'southampton'
 
     weatherCall = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}'
@@ -61,7 +61,6 @@ async def weatherNow(context):
 @bot.command()
 # displays the current weather of any city around the world
 async def weatherNowAt(context, city: str = None):
-
     # 'city' will have a default type of None, so we can send a message back to the user to tell
     # them to enter a city name which will make the type a String
     if city is None:
@@ -118,6 +117,52 @@ async def formatResponse(context, weatherCall):
             # successful response
             except KeyError:
                 await context.send(":x: Unable to find city weather details!")
+
+
+@bot.command()
+# informs the user how to use the /subscribe command
+async def subscribeHelp(context):
+    await context.send("enter the /subscribe command in this format for daily updates:\n"
+                       "```/subscribe {CityName} {timeYouWantToBeAlerted}```")
+
+
+@bot.command()
+# allows user to get weather updates daily at a set time
+async def subscribe(context, city: str = None, alertTime: str = None):
+    # NOTE: 'alertTime' is based on their local time zone
+
+    if city is None and alertTime is None:
+        await context.send(":x: You did not enter a city or alert time! :x:\n"
+                           "refer to **/subscribeHelp** for further information")
+    # There is no need to add a condition for no city value since the user is either
+    # going to input none of the required arguments or he is going to put one, the
+    # 'city' value. Thus, both scenarios have been accounted for.
+    elif alertTime is None:
+        await context.send(":x: You did not enter an alert time! :x:\n"
+                           "refer to **/subscribeHelp** for further information")
+    else:
+
+
+        # the storage json file has a key called 'firstTime' since the storage is
+        # persistent and the bot is not (it will lose information once it restarts e.g.),
+        # this is important, so we can set the value of minimumCheck to None when the
+        # storage has not been updated before
+
+        firstTime = firstTimeCheck()
+
+
+# see if the storage has been updated before
+def firstTimeCheck():
+    with open('storage.json', 'r') as file:
+        data = json.load(file)
+
+    # checks the key to see if the boolean is true
+    if data["firstTime"]:
+        data.close()
+        return True
+    else:
+        data.close()
+        return False
 
 
 

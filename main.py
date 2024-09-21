@@ -142,7 +142,6 @@ async def subscribe(context, city: str = None, alertTime: str = None):
                            "refer to **/subscribeHelp** for further information")
     else:
 
-
         # the storage json file has a key called 'firstTime' since the storage is
         # persistent and the bot is not (it will lose information once it restarts e.g.),
         # this is important, so we can set the value of minimumCheck to None when the
@@ -150,20 +149,52 @@ async def subscribe(context, city: str = None, alertTime: str = None):
 
         firstTime = firstTimeCheck()
 
+        #
+        if firstTime:
+            pass
+        else:
+            pass
+
+        timeZone = await getTimeZone(context, city)
+
+        # escaping function if we cannot determine
+        # timezone value
+        if not timeZone:
+            return
+
 
 # see if the storage has been updated before
 def firstTimeCheck():
     with open('storage.json', 'r') as file:
         data = json.load(file)
-
     # checks the key to see if the boolean is true
     if data["firstTime"]:
-        data.close()
         return True
     else:
-        data.close()
         return False
 
+
+# returning value required to convert local time to UTC time for local storage
+async def getTimeZone(context, city):
+
+    weatherCall = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}'
+
+    # making an HTTP call to 'OpenWeatherMap'
+    async with aiohttp.ClientSession() as session:
+        async with session.get(weatherCall) as resp:
+            # receive the response as a json
+            data = await resp.text()
+            data = json.loads(data)
+
+            try:
+                # returning timezone value used to convert local time to UTC
+                return data["timezone"]
+
+            except KeyError:
+                await context.send(":x: Unable to find city timezone!")
+                # we can use the None value to stop the subscription process if the
+                # timezone value cannot be found
+                return False
 
 
 

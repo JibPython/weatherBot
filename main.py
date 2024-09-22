@@ -128,7 +128,7 @@ async def subscribeHelp(context):
 
 @bot.command()
 # allows user to get weather updates daily at a set time
-async def subscribe(context, city: str = None, alertTime: str = None):
+async def subscribe(context, city: str = None,  alertTime: str = None):
     # NOTE: 'alertTime' is based on their local time zone
 
     if city is None and alertTime is None:
@@ -149,7 +149,7 @@ async def subscribe(context, city: str = None, alertTime: str = None):
 
         firstTime = firstTimeCheck()
 
-        #
+        # COME BACK TO 
         if firstTime:
             pass
         else:
@@ -161,6 +161,10 @@ async def subscribe(context, city: str = None, alertTime: str = None):
         # timezone value
         if not timeZone:
             return
+
+        userId = getMemberId(context)
+
+        name = getMemberName(context)
 
 
 # see if the storage has been updated before
@@ -196,6 +200,14 @@ async def getTimeZone(context, city):
                 # timezone value cannot be found
                 return False
 
+
+# finding the Member ID and name to store in the json file
+def getMemberId(context):
+    return context.message.author.id
+
+
+def getMemberName(context):
+    return context.message.author.name
 
 
 # Giving the bot access to the token

@@ -309,11 +309,12 @@ def addUserInformation(userInformation):
         json.dump(storage, file, indent=4)
 
 
-# COME BACK TO
-def noUsers():
-    # reading storage.json
+# used to retrieve minimumCheckTime value
+def getMinimumCheckTime():
     with open('storage.json', 'r') as file:
         storage = json.load(file)
+
+    return storage["minimumCheckTime"]
 
 
 # Giving the bot access to the token

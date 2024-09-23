@@ -8,6 +8,8 @@ from bot_information import DISCORD_TOKEN, WEATHER_API
 import aiohttp
 # used for parsing
 import json
+# used for rounding down for time conversion to utc
+import math
 
 # AN INTENT ALLOWS THE BOT TO LISTEN TO
 # SPECIFIC TYPE OF EVENTS
@@ -166,6 +168,8 @@ async def subscribe(context, city: str = None,  alertTime: str = None):
 
         name = getMemberName(context)
 
+        utcTime = getUtcTime(alertTime, timeZone)
+
 
 # see if the storage has been updated before
 def firstTimeCheck():
@@ -208,6 +212,42 @@ def getMemberId(context):
 
 def getMemberName(context):
     return context.message.author.name
+
+
+def getUtcTime(localTime, timeZone):
+    # 'localTimeAhead' determines the operation sign
+    localTimeAhead = True
+    if str(timeZone)[0] == '-':
+        localTimeAhead = False
+        timeZone = int(str(timeZone)[1:])
+
+    # timeZone is measured in seconds, thus we can convert it to minutes and hours
+    timeZoneHours = math.floor(timeZone / 3600)
+    timeZoneMinutes = int((timeZone - (timeZoneHours*3600)) / 60)
+
+    # slice the 'localTime' to extract the hours
+    localTimeHours = localTime[0:2]
+    localTimeMinutes = localTime[3:6]
+
+    # if the local time is ahead, you have to subtract the time zone conversion
+    # to make it equal to utc
+    if localTimeAhead:
+        newHours = (int(localTimeHours) - int(timeZoneHours)) % 24
+        newMinutes = (int(localTimeMinutes) - int(timeZoneMinutes)) % 60
+    else:
+        newHours = (int(localTimeHours) + int(timeZoneHours)) % 24
+        newMinutes = (int(localTimeMinutes) + int(timeZoneMinutes)) % 60
+
+    # ensuring that if hours or minutes is a single digit there is a 0 as a prefix
+    # to maintain the military format
+    if newHours < 10:
+        newHours = '0' + str(newHours)
+
+    if newMinutes < 10:
+        newMinutes = '0' + str(newMinutes)
+
+    utcTime = f'{newHours}:{newMinutes}'
+    return utcTime
 
 
 # Giving the bot access to the token

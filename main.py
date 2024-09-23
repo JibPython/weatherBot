@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 # retrieve token and api
-from bot_information import DISCORD_TOKEN, WEATHER_API
+from bot_information import DISCORD_TOKEN, WEATHER_API, BOT_CITY
 # an asynchronous http library to retrieve weather information
 # from 'OpenWeatherMap'
 import aiohttp
@@ -10,6 +10,8 @@ import aiohttp
 import json
 # used for rounding down for time conversion to utc
 import math
+# used to get the current time
+import datetime
 
 # AN INTENT ALLOWS THE BOT TO LISTEN TO
 # SPECIFIC TYPE OF EVENTS
@@ -189,6 +191,9 @@ async def subscribe(context, city: str = None,  alertTime: str = None):
 
         addUserInformation(userInformation)
 
+        currentTime = await getCurrentTimeUTC(context)
+        print(currentTime)
+
 
 # see if the storage has been updated before
 def firstTimeCheck():
@@ -316,6 +321,29 @@ def getMinimumCheckTime():
 
     return storage["minimumCheckTime"]
 
+# used to calculate the minimumCheckTime
+# COME BACK TO
+def updateMinimumCheckTime():
+    with open('storage.json', 'r') as file:
+        storage = json.load(file)
+
+
+# required to get the current time to calculate 'minimumCheckTime' value
+# so the bot knows what time the next upcoming alert is
+async def getCurrentTimeUTC(context):
+    # this is the current time in the local time zone
+    # this value needs to be converted to utc
+    currentTimeLocal = str(datetime.datetime.now())
+
+    # 'BOT_CITY' is a string literal where it is equal to the city name
+    # where the bot is being run from
+    botTimeZoneOffset = await getTimeZone(context, BOT_CITY)
+
+    # had to get the substring of 'currentTimeLocal' to remove the current date along
+    # with the seconds and milliseconds
+    currentTimeUtc = getUtcTime(currentTimeLocal[11:16], botTimeZoneOffset)
+
+    return currentTimeUtc
 
 # Giving the bot access to the token
 bot.run(DISCORD_TOKEN)

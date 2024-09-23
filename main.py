@@ -157,19 +157,35 @@ async def subscribe(context, city: str = None,  alertTime: str = None):
         else:
             pass
 
-        timeZone = await getTimeZone(context, city)
+        # the time zone offset from local time to utc, required for time conversion
+        timeZoneOffset = await getTimeZone(context, city)
 
         # escaping function if we cannot determine
         # timezone value
-        if not timeZone:
+        if not timeZoneOffset:
             return
 
         userId = getMemberId(context)
 
-        name = getMemberName(context)
+        username = getMemberName(context)
 
-        utcTime = getUtcTime(alertTime, timeZone)
+        alertTimeUtc = getUtcTime(alertTime, timeZoneOffset)
 
+        # creating dictionary to add to the storage.json
+        userInformation = {
+            'userId': userId,
+            'username': username,
+            'city': city,
+            'alertTimeUtc': alertTimeUtc,
+            'timeZoneOffset': timeZoneOffset
+        }
+
+        # check to see if the alert exists already, do not want any duplicate alerts
+        exists = checkAlertExists(userId, city, alertTimeUtc)
+
+        if exists:
+            context.send(':x: You cannot duplicate alerts! :x:')
+            return
 
 # see if the storage has been updated before
 def firstTimeCheck():
@@ -214,16 +230,18 @@ def getMemberName(context):
     return context.message.author.name
 
 
-def getUtcTime(localTime, timeZone):
+# converts local time to utc so that the storage.json stores time in one
+# universal time zone
+def getUtcTime(localTime, timeZoneOffset):
     # 'localTimeAhead' determines the operation sign
     localTimeAhead = True
-    if str(timeZone)[0] == '-':
+    if str(timeZoneOffset)[0] == '-':
         localTimeAhead = False
-        timeZone = int(str(timeZone)[1:])
+        timeZoneOffset = int(str(timeZoneOffset)[1:])
 
-    # timeZone is measured in seconds, thus we can convert it to minutes and hours
-    timeZoneHours = math.floor(timeZone / 3600)
-    timeZoneMinutes = int((timeZone - (timeZoneHours*3600)) / 60)
+    # 'timeZoneOffset' is measured in seconds, thus we can convert it to minutes and hours
+    timeZoneOffsetHours = math.floor(timeZoneOffset / 3600)
+    timeZoneOffsetMinutes = int((timeZoneOffset - (timeZoneOffsetHours*3600)) / 60)
 
     # slice the 'localTime' to extract the hours
     localTimeHours = localTime[0:2]
@@ -232,11 +250,11 @@ def getUtcTime(localTime, timeZone):
     # if the local time is ahead, you have to subtract the time zone conversion
     # to make it equal to utc
     if localTimeAhead:
-        newHours = (int(localTimeHours) - int(timeZoneHours)) % 24
-        newMinutes = (int(localTimeMinutes) - int(timeZoneMinutes)) % 60
+        newHours = (int(localTimeHours) - int(timeZoneOffsetHours)) % 24
+        newMinutes = (int(localTimeMinutes) - int(timeZoneOffsetMinutes)) % 60
     else:
-        newHours = (int(localTimeHours) + int(timeZoneHours)) % 24
-        newMinutes = (int(localTimeMinutes) + int(timeZoneMinutes)) % 60
+        newHours = (int(localTimeHours) + int(timeZoneOffsetHours)) % 24
+        newMinutes = (int(localTimeMinutes) + int(timeZoneOffsetMinutes)) % 60
 
     # ensuring that if hours or minutes is a single digit there is a 0 as a prefix
     # to maintain the military format
@@ -248,6 +266,11 @@ def getUtcTime(localTime, timeZone):
 
     utcTime = f'{newHours}:{newMinutes}'
     return utcTime
+
+
+# come back to later
+def checkAlertExists(userId, city, alertTimeUtc):
+    return None
 
 
 # Giving the bot access to the token

@@ -299,9 +299,21 @@ def addUserInformation(userInformation):
     values.append(userInformation)
     storage["users"] = values
 
+    # updating 'minimumCheckTime' if this is the first
+    # alert added
+    if storage["minimumCheckTime"] is None:
+        storage["minimumCheckTime"] = userInformation["alertTimeUtc"]
+
     # updating the storage.json file
     with open('storage.json', 'w') as file:
         json.dump(storage, file, indent=4)
+
+
+# COME BACK TO
+def noUsers():
+    # reading storage.json
+    with open('storage.json', 'r') as file:
+        storage = json.load(file)
 
 
 # Giving the bot access to the token

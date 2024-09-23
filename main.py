@@ -181,11 +181,11 @@ async def subscribe(context, city: str = None,  alertTime: str = None):
         }
 
         # check to see if the alert exists already, do not want any duplicate alerts
-        # exists = checkAlertExists(userId, city, alertTimeUtc)
+        exists = checkAlertExists(userId, city, alertTimeUtc)
 
-        # if exists:
-        #    context.send(':x: You cannot duplicate alerts! :x:')
-        #    return
+        if exists:
+            await context.send(':x: You cannot duplicate alerts! :x:')
+            return
 
         addUserInformation(userInformation)
 
@@ -276,7 +276,15 @@ def checkAlertExists(userId, city, alertTimeUtc):
     with open('storage.json', 'r') as file:
         storage = json.load(file)
 
-    return None
+    # getting 'users' values
+    userAlerts = storage["users"]
+
+    # returning True if the alert with the same userId, city and alertTimeUtc exists already
+    for dict in userAlerts:
+        if dict["userId"] == userId and dict["city"] == city and dict["alertTimeUtc"] == alertTimeUtc:
+            return True
+    else:
+        return False
 
 
 # adding user alert details to storage.json

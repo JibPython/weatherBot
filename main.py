@@ -181,11 +181,14 @@ async def subscribe(context, city: str = None,  alertTime: str = None):
         }
 
         # check to see if the alert exists already, do not want any duplicate alerts
-        exists = checkAlertExists(userId, city, alertTimeUtc)
+        # exists = checkAlertExists(userId, city, alertTimeUtc)
 
-        if exists:
-            context.send(':x: You cannot duplicate alerts! :x:')
-            return
+        # if exists:
+        #    context.send(':x: You cannot duplicate alerts! :x:')
+        #    return
+
+        addUserInformation(userInformation)
+
 
 # see if the storage has been updated before
 def firstTimeCheck():
@@ -270,7 +273,27 @@ def getUtcTime(localTime, timeZoneOffset):
 
 # come back to later
 def checkAlertExists(userId, city, alertTimeUtc):
+    with open('storage.json', 'r') as file:
+        storage = json.load(file)
+
     return None
+
+
+# adding user alert details to storage.json
+def addUserInformation(userInformation):
+    # reading storage.json
+    with open('storage.json', 'r') as file:
+        storage = json.load(file)
+
+    # adding the new user alert details to the previous
+    # stored values in the storage.json file
+    values = storage["users"]
+    values.append(userInformation)
+    storage["users"] = values
+
+    # updating the storage.json file
+    with open('storage.json', 'w') as file:
+        json.dump(storage, file, indent=4)
 
 
 # Giving the bot access to the token

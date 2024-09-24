@@ -20,7 +20,7 @@ class MergeSort:
         # sorted list
         sortedList = self.__merge(sublistOneSorted, sublistTwoSorted)
 
-        print(sortedList)
+        return sortedList
 
     # split the unsorted list into two sublists
     def __divide(self):

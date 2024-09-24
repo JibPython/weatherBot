@@ -12,6 +12,8 @@ import json
 import math
 # used to get the current time
 import datetime
+# Used to sort the alert times to find the minimumCheckTime
+from algorithm import MergeSort
 
 # AN INTENT ALLOWS THE BOT TO LISTEN TO
 # SPECIFIC TYPE OF EVENTS
@@ -192,7 +194,8 @@ async def subscribe(context, city: str = None,  alertTime: str = None):
         addUserInformation(userInformation)
 
         currentTime = await getCurrentTimeUTC(context)
-        print(currentTime)
+
+        updateMinimumCheckTime(context, currentTime)
 
 
 # see if the storage has been updated before
@@ -321,11 +324,67 @@ def getMinimumCheckTime():
 
     return storage["minimumCheckTime"]
 
-# used to calculate the minimumCheckTime
-# COME BACK TO
-def updateMinimumCheckTime():
+
+# used to calculate the minimumCheckTime and update the storage.json file
+def updateMinimumCheckTime(context, currentTime):
     with open('storage.json', 'r') as file:
         storage = json.load(file)
+
+    times = []
+    users = storage["users"]
+
+    # making an unsorted list of alert times
+    for user in users:
+        times.append(user["alertTimeUtc"])
+
+    minimumCheckTime = None
+    # the minimumCheckTime is set to None in case there is no
+    # alerts saved in storage.json
+    if times:
+
+        # sort times in sequential order
+        timesSorted = MergeSort(times).sort()
+        # for debugging purposes
+        print(timesSorted)
+        for index in range(len(timesSorted)):
+            # if the first alertTime is greater than the current time then that
+            # will be the minimumCheckTime
+            if index == 0:
+               if comparingTimes(timesSorted[index], currentTime) == "time1":
+                    minimumCheckTime = timesSorted[0]
+                    break
+            # if the current time is equal to one of the alert times then an alert
+            # needs to be made straight away
+            if comparingTimes(timesSorted[index], currentTime) == "draw":
+                minimumCheckTime = currentTime
+                break
+            # if it is the last element in the sorted time alerts and it is not
+            if index == len(timesSorted) - 1:
+                # if the current time is later than the last alert, then the next
+                # alert will be the first alert on the following day
+                if comparingTimes(timesSorted[index], currentTime) == "time2":
+                    minimumCheckTime = timesSorted[0]
+                    break
+                else:
+                    # if the last alert time is later than the current time then that
+                    # will be the next alert time
+                    minimumCheckTime = timesSorted[index]
+                    break
+            # if the current time is greater than the previous alert time, but it is not greater than
+            # the upcoming alert, then the minimumCheckTime will be the upcoming alert time
+            if comparingTimes(timesSorted[index], currentTime) == "time2" and comparingTimes(timesSorted[index+1], currentTime) == "time1":
+                minimumCheckTime = timesSorted[index + 1]
+                break
+
+    # need to update the minimumCheckTime in storage.json
+    storage["minimumCheckTime"] = minimumCheckTime
+
+    with open('storage.json', 'w') as file:
+        json.dump(storage, file, indent=4)
+
+    # to make sure that the feature is working as expected
+    print(f'the current time is: {currentTime}')
+    print(f'the minimum check time is {minimumCheckTime}')
 
 
 # required to get the current time to calculate 'minimumCheckTime' value
@@ -344,6 +403,27 @@ async def getCurrentTimeUTC(context):
     currentTimeUtc = getUtcTime(currentTimeLocal[11:16], botTimeZoneOffset)
 
     return currentTimeUtc
+
+# used to compare the times stored in storage.json and the current time
+def comparingTimes(time1, time2):
+    timeOneHour = int(time1[0:2])
+    timeOneMinutes = int(time1[3:])
+    timeTwoHour = int(time2[0:2])
+    timeTwoMinutes = int(time2[3:])
+    # Compare hour to see if there is an immediate difference
+    if timeOneHour > timeTwoHour:
+        return "time1"
+    elif timeTwoHour > timeOneHour:
+        return "time2"
+    elif timeOneHour == timeTwoHour:
+        # Compare minutes to see deduce which one is greater
+        if timeTwoMinutes > timeOneMinutes:
+            return "time2"
+        elif timeOneMinutes > timeTwoMinutes:
+            return "time1"
+        else:
+            return "draw"
+
 
 # Giving the bot access to the token
 bot.run(DISCORD_TOKEN)

@@ -90,19 +90,20 @@ class MergeSort:
         # this block will process
         while sublistOne or sublistTwo:
 
-            # due to the possibility of an unsorted sub-list having an extra
-            # element that the other unsorted sub-list this happens to make
-            # that last element append at the last position of finalList
-            # (this will happen if the unsorted list has an odd number of
-            # elements)
-            if len(sublistOne) == 1 and len(sublistTwo) == 0:
-                finalList.append(sublistOne[0])
-                sublistOne.pop(0)
-                continue
-            elif len(sublistOne) == 0 and len(sublistTwo) == 1:
-                finalList.append(sublistTwo[0])
-                sublistTwo.pop(0)
-                continue
+            # there is a possibility that one of the sub-lists can become
+            # empty before the other one, in this case, the sublist that
+            # still has times should all be added to the end of the
+            # finalList
+            if sublistOne and not sublistTwo:
+                for item in sublistOne:
+                    finalList.append(item)
+                    sublistOne.remove(item)
+                break
+            elif not sublistOne and sublistTwo:
+                for item in sublistTwo:
+                    finalList.append(item)
+                    sublistTwo.remove(item)
+                break
 
             output = self.__comparingTimes(sublistOne[0], sublistTwo[0])
 
@@ -169,4 +170,3 @@ def test():
     unsortedTwo = ["12:02", "04:12"]
     mergeSortTwo = MergeSort(unsortedTwo)
     mergeSortTwo.sort()
-

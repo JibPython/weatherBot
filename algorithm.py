@@ -1,3 +1,6 @@
+# I decided to use merge sort for sorting since it has a time complexity
+# of O(n * Log n) even as the data set increases, this means that it will
+# not become less efficient - this complexity is the best, average and worst case.
 class MergeSort:
     unsortedList1 = []
     unsortedList2 = []

@@ -14,6 +14,9 @@ import math
 import datetime
 # Used to sort the alert times to find the minimumCheckTime
 from algorithm import MergeSort
+# Required to not send an alert till the current time is equal
+# to the alertTimeUtc
+import asyncio
 
 # AN INTENT ALLOWS THE BOT TO LISTEN TO
 # SPECIFIC TYPE OF EVENTS
@@ -35,8 +38,11 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 # prints message to terminal to show it's running
 @bot.event
 async def on_ready():
-    # may need to handle connection to weather api
+    # need to handle retrieving the minimumCheckTime and update it
+    # in case the bot has come online later and missed an alert time
     print('logged in successfully')
+    print(getMinimumCheckTime())
+    await waitTillNextAlert()
 
 
 # processing every message
@@ -162,11 +168,12 @@ async def subscribe(context, city: str = None,  alertTime: str = None):
             pass
 
         # the time zone offset from local time to utc, required for time conversion
-        timeZoneOffset = await getTimeZone(context, city)
+        timeZoneOffset = await getTimeZone(city)
 
         # escaping function if we cannot determine
         # timezone value
         if not timeZoneOffset:
+            await context.send(":x: Unable to find city timezone!")
             return
 
         userId = getMemberId(context)
@@ -193,9 +200,9 @@ async def subscribe(context, city: str = None,  alertTime: str = None):
 
         addUserInformation(userInformation)
 
-        currentTime = await getCurrentTimeUTC(context)
+        currentTime = await getCurrentTimeUTC()
 
-        updateMinimumCheckTime(context, currentTime)
+        updateMinimumCheckTime(currentTime)
 
 
 # see if the storage has been updated before
@@ -210,7 +217,7 @@ def firstTimeCheck():
 
 
 # returning value required to convert local time to UTC time for local storage
-async def getTimeZone(context, city):
+async def getTimeZone(city):
 
     weatherCall = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}'
 
@@ -226,7 +233,6 @@ async def getTimeZone(context, city):
                 return data["timezone"]
 
             except KeyError:
-                await context.send(":x: Unable to find city timezone!")
                 # we can use the None value to stop the subscription process if the
                 # timezone value cannot be found
                 return False
@@ -326,7 +332,7 @@ def getMinimumCheckTime():
 
 
 # used to calculate the minimumCheckTime and update the storage.json file
-def updateMinimumCheckTime(context, currentTime):
+def updateMinimumCheckTime(currentTime):
     with open('storage.json', 'r') as file:
         storage = json.load(file)
 
@@ -389,14 +395,14 @@ def updateMinimumCheckTime(context, currentTime):
 
 # required to get the current time to calculate 'minimumCheckTime' value
 # so the bot knows what time the next upcoming alert is
-async def getCurrentTimeUTC(context):
+async def getCurrentTimeUTC():
     # this is the current time in the local time zone
     # this value needs to be converted to utc
     currentTimeLocal = str(datetime.datetime.now())
 
     # 'BOT_CITY' is a string literal where it is equal to the city name
     # where the bot is being run from
-    botTimeZoneOffset = await getTimeZone(context, BOT_CITY)
+    botTimeZoneOffset = await getTimeZone(BOT_CITY)
 
     # had to get the substring of 'currentTimeLocal' to remove the current date along
     # with the seconds and milliseconds
@@ -404,7 +410,9 @@ async def getCurrentTimeUTC(context):
 
     return currentTimeUtc
 
+
 # used to compare the times stored in storage.json and the current time
+# to determine which time is greater than the other
 def comparingTimes(time1, time2):
     timeOneHour = int(time1[0:2])
     timeOneMinutes = int(time1[3:])
@@ -423,6 +431,53 @@ def comparingTimes(time1, time2):
             return "time1"
         else:
             return "draw"
+
+
+# returns the difference between two times in seconds,
+# required for the 'waitTillNextAlert' function
+def differenceBetweenTimes(time1, time2):
+    # time2 will always be greater than time1 since the next
+    # minimumCheckTime will always be greater than the current time
+    timeOneHour = int(time1[0:2])
+    timeOneMinutes = int(time1[3:])
+    timeTwoHour = int(time2[0:2])
+    timeTwoMinutes = int(time2[3:])
+
+    hourDifference = timeTwoHour - timeOneHour
+    minuteDifference = timeTwoMinutes - timeOneMinutes
+
+    hoursToSeconds = hourDifference * 3600
+    minutesToSeconds = minuteDifference * 60
+
+    totalSeconds = hoursToSeconds + minutesToSeconds
+
+    return totalSeconds
+
+
+async def waitTillNextAlert():
+    while True:
+        currentTime = await getCurrentTimeUTC()
+        updateMinimumCheckTime(currentTime)
+
+        # need to find a difference between the current time and the
+        # minimumCheckTime and convert it to seconds to synchronize the
+        # weather alert with the alertTimeUtc
+
+        if comparingTimes(currentTime, getMinimumCheckTime()) == "draw":
+            # the program does not need to wait to send an alert notification
+            print("it is the same time2")
+        else:
+            waitSeconds = differenceBetweenTimes(currentTime, getMinimumCheckTime())
+            print(f'{waitSeconds} seconds till next alert')
+            # wait till the currentTime is equal to the minimumCheckTime
+            await asyncio.sleep(waitSeconds)
+            print("it is the same time")
+
+
+# This function handles when a user needs to be notified about their weather information
+def sendAlerts():
+    weatherNowAt
+
 
 
 # Giving the bot access to the token
